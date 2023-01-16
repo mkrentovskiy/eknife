@@ -52,7 +52,8 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                  #{<<"accept">> =>
                                        get_access_type(Type) ++ ", */*;q=0.9",
                                    <<"content-type">> => get_content_type(Type)}),
-            ?LOG_DEBUG("Make a ~p connection to ~p:~p", [Host, Port]),
+            ?LOG_DEBUG("Make a ~p connection to ~p:~p",
+                       [Host, Port]),
             {ok, ConnPid} = case TransportOptions of
                                 [] -> gun:open(Host, Port, #{protocols => [http]});
                                 _ ->
@@ -69,47 +70,41 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                             true ->
                                 FullPath = Path ++ QS,
                                 EncBody = encode_body(Type, Body),
-                                BodySize = byte_size(EncBody), 
-                                FullHeaders = maps:to_list(Headers#{<<"content-length">> => BodySize}), 
-                                ?LOG_DEBUG("Make request ~p ~p with headers ~p and body size ~p", [Method, FullPath, FullHeaders, byte_size(EncBody)]),
-                                case BodySize > (4 * 1024) of
-                                    true ->
-                                        ok;
-                                    false ->
-                                        ?LOG_DEBUG("Body: ~p", [EncBody])
+                                BodySize = byte_size(EncBody),
+                                FullHeaders = maps:to_list(Headers#{<<"content-length">>
+                                                                        => BodySize}),
+                                ?LOG_DEBUG("Make request ~p ~p with headers ~p and "
+                                           "body size ~p",
+                                           [Method, FullPath, FullHeaders, byte_size(EncBody)]),
+                                case BodySize > 4 * 1024 of
+                                    true -> ok;
+                                    false -> ?LOG_DEBUG("Body: ~p", [EncBody])
                                 end,
-                                gun:Method(ConnPid,
-                                           FullPath,
-                                           FullHeaders,
-                                           EncBody);
+                                gun:Method(ConnPid, FullPath, FullHeaders, EncBody);
                             false when length(QS) =:= 0 ->
                                 FullPath = lists:concat([Path,
                                                          "?",
                                                          binary_to_list(cow_qs:qs(maps:to_list(Body)))]),
                                 FullHeaders = maps:to_list(Headers),
-                                ?LOG_DEBUG("Make request ~p ~p with headers ~p", [Method, FullPath, FullHeaders]),
-                                gun:Method(ConnPid,
-                                           FullPath,
-                                           FullHeaders);
+                                ?LOG_DEBUG("Make request ~p ~p with headers ~p",
+                                           [Method, FullPath, FullHeaders]),
+                                gun:Method(ConnPid, FullPath, FullHeaders);
                             false when length(QS) =/= 0 ->
                                 FullPath = lists:concat([Path,
                                                          QS,
                                                          "&",
                                                          binary_to_list(cow_qs:qs(maps:to_list(Body)))]),
                                 FullHeaders = maps:to_list(Headers),
-                                ?LOG_DEBUG("Make request ~p ~p with headers ~p", [Method, FullPath, FullHeaders]),
-                                gun:Method(ConnPid,
-                                           FullPath,
-                                           FullHeaders);
+                                ?LOG_DEBUG("Make request ~p ~p with headers ~p",
+                                           [Method, FullPath, FullHeaders]),
+                                gun:Method(ConnPid, FullPath, FullHeaders);
                             false ->
                                 FullPath = Path ++ QS,
                                 FullHeaders = maps:to_list(Headers),
-                                ?LOG_DEBUG("Make request ~p ~p with headers ~p", [Method, FullPath, FullHeaders]),
-                                gun:Method(ConnPid,
-                                           FullPath,
-                                           FullHeaders)
+                                ?LOG_DEBUG("Make request ~p ~p with headers ~p",
+                                           [Method, FullPath, FullHeaders]),
+                                gun:Method(ConnPid, FullPath, FullHeaders)
                         end,
-            
             Resp = case gun:await(ConnPid, StreamRef, ?GUN_TIMEOUT)
                        of
                        {response, fin, Status, RespHeaders} ->
