@@ -52,7 +52,7 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                  #{<<"accept">> =>
                                        get_access_type(Type) ++ ", */*;q=0.9",
                                    <<"content-type">> => get_content_type(Type)}),
-            ?LOG_DEBUG("Make a ~p connection to ~p:~p",
+            ?LOG_DEBUG("Make connection to the ~p:~p",
                        [Host, Port]),
             {ok, ConnPid} = case TransportOptions of
                                 [] -> gun:open(Host, Port, #{protocols => [http]});
