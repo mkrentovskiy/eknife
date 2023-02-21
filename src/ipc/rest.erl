@@ -47,14 +47,19 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                   Body, TransportOptions) ->
     case url_parse(URL) of
         undefined -> {error, invalid_url};
-        {Host, Port, Path, QS} ->
-            Headers = maps:merge(keys_to_lower(InHeaders),
-                                 #{<<"accept">> =>
-                                       get_access_type(Type) ++ ", */*;q=0.9",
-                                   <<"content-type">> => get_content_type(Type)}),
-            ?LOG_DEBUG("Make connection to the ~p:~p",
-                       [Host, Port]),
+        {Scheme, Host, Port, Path, QS} ->
+            Headers = maps:merge(#{<<"accept">> =>
+                                       cast:to_binary(get_accept_type(Type) ++ "*/*;q=0.9"),
+                                   <<"content-type">> =>
+                                       cast:to_binary(get_content_type(Type))},
+                                 keys_to_lower(InHeaders)),
+            ?LOG_DEBUG("Make connection to the ~p:~p (~p)",
+                       [Host, Port, Scheme]),
             {ok, ConnPid} = case TransportOptions of
+                                [] when Scheme =:= https ->
+                                    gun:open(Host,
+                                             Port,
+                                             #{protocols => [http], transport => tls});
                                 [] -> gun:open(Host, Port, #{protocols => [http]});
                                 _ ->
                                     gun:open(Host,
@@ -68,7 +73,7 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                        [post, put])
                             of
                             true ->
-                                FullPath = Path ++ QS,
+                                FullPath = Path ++ "?" ++ QS,
                                 EncBody = encode_body(Type, Body),
                                 BodySize = byte_size(EncBody),
                                 FullHeaders = maps:to_list(Headers#{<<"content-length">>
@@ -141,7 +146,11 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
 url_parse(URL) ->
     case uri_string:parse(cast:to_list(URL)) of
         URI when is_map(URI) ->
-            {maps:get(host, URI, "localhost"),
+            {case maps:get(scheme, URI, "http") of
+                 "https" -> https;
+                 _ -> http
+             end,
+             maps:get(host, URI, "localhost"),
              maps:get(port,
                       URI,
                       case maps:get(scheme, URI, "http") of
@@ -160,11 +169,13 @@ url_parse(URL) ->
                         [{capture, all, list}])
                 of
                 {match, [_, "https", Host, [], Path, QS]} ->
-                    {Host, 443, Path, QS};
+                    {https, Host, 443, Path, QS};
                 {match, [_, _, Host, [], Path, QS]} ->
-                    {Host, 80, Path, QS};
-                {match, [_, _Proto, Host, PortS, Path, QS]} ->
-                    {Host, utils:to_integer(PortS, 80), Path, QS};
+                    {http, Host, 80, Path, QS};
+                {match, [_, "http", Host, PortS, Path, QS]} ->
+                    {https, Host, utils:to_integer(PortS, 80), Path, QS};
+                {match, [_, "https", Host, PortS, Path, QS]} ->
+                    {https, Host, utils:to_integer(PortS, 443), Path, QS};
                 Other ->
                     ?LOG_WARNING("Can't parse URL ~p - ~p", [URL, Other]),
                     undefined
@@ -176,10 +187,11 @@ keys_to_lower(L) when is_list(L) ->
 keys_to_lower(M) when is_map(M) ->
     maps:from_list(keys_to_lower(maps:to_list(M))).
 
-get_access_type(html) -> "text/html";
-get_access_type(qs) ->
-    "application/x-www-form-urlencoded";
-get_access_type(_) -> "application/json".
+get_accept_type(html) -> "text/html, ";
+get_accept_type(qs) ->
+    "application/x-www-form-urlencoded, ";
+get_accept_type(json) -> "application/json, ";
+get_accept_type(_) -> "".
 
 get_content_type(video) -> "video/mp4";
 get_content_type({multipart, _}) ->
@@ -187,7 +199,8 @@ get_content_type({multipart, _}) ->
 get_content_type(html) -> "text/html";
 get_content_type(qs) ->
     "application/x-www-form-urlencoded";
-get_content_type(_) -> "application/json".
+get_content_type(json) -> "application/json";
+get_content_type(_) -> "text/plain".
 
 encode_body(qs, Body) -> cow_qs:qs(maps:to_list(Body));
 encode_body(html, Body) -> Body;
