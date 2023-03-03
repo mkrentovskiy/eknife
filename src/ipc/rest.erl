@@ -73,7 +73,10 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                        [post, put])
                             of
                             true ->
-                                FullPath = Path ++ "?" ++ QS,
+                                FullPath = case length(QS) of
+                                               0 -> Path;
+                                               _ -> Path ++ "?" ++ QS
+                                           end,
                                 EncBody = encode_body(Type, Body),
                                 BodySize = byte_size(EncBody),
                                 FullHeaders = maps:to_list(Headers#{<<"content-length">>
@@ -87,15 +90,20 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                 end,
                                 gun:Method(ConnPid, FullPath, FullHeaders, EncBody);
                             false when length(QS) =:= 0 ->
-                                FullPath = lists:concat([Path,
-                                                         "?",
-                                                         binary_to_list(cow_qs:qs(maps:to_list(Body)))]),
+                                FullPath = case maps:size(Body) of
+                                               0 -> Path;
+                                               _ ->
+                                                   lists:concat([Path,
+                                                                 "?",
+                                                                 binary_to_list(cow_qs:qs(maps:to_list(Body)))])
+                                           end,
                                 FullHeaders = maps:to_list(Headers),
                                 ?LOG_DEBUG("Make request ~p ~p with headers ~p",
                                            [Method, FullPath, FullHeaders]),
                                 gun:Method(ConnPid, FullPath, FullHeaders);
                             false when length(QS) =/= 0 ->
                                 FullPath = lists:concat([Path,
+                                                         "?",
                                                          QS,
                                                          "&",
                                                          binary_to_list(cow_qs:qs(maps:to_list(Body)))]),
@@ -104,7 +112,10 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                            [Method, FullPath, FullHeaders]),
                                 gun:Method(ConnPid, FullPath, FullHeaders);
                             false ->
-                                FullPath = Path ++ QS,
+                                FullPath = case length(QS) of
+                                               0 -> Path;
+                                               _ -> Path ++ "?" ++ QS
+                                           end,
                                 FullHeaders = maps:to_list(Headers),
                                 ?LOG_DEBUG("Make request ~p ~p with headers ~p",
                                            [Method, FullPath, FullHeaders]),
@@ -164,8 +175,8 @@ url_parse(URL) ->
                        "~p, down to custom",
                        [URL, Any]),
             case re:run(URL,
-                        "([a-z0-9]*):\\/\\/([^:\\/]+)(:[0-9]+)?([^?]*)"
-                        "(\\??.*)?",
+                        "([a-z0-9]*):\\/\\/([^:\\/]+)(:[0-9]+)?([^?]*)\\"
+                        "??(.*)?",
                         [{capture, all, list}])
                 of
                 {match, [_, "https", Host, [], Path, QS]} ->
