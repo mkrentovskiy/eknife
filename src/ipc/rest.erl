@@ -207,6 +207,8 @@ get_accept_type(_) -> "".
 get_content_type(video) -> "video/mp4";
 get_content_type({multipart, _}) ->
     "multipart/form-data; boundary=xxxxxxxxXXXXXXXX";
+get_content_type({multipart, _, _}) ->
+    "multipart/form-data; boundary=xxxxxxxxXXXXXXXX";
 get_content_type(html) -> "text/html";
 get_content_type(qs) ->
     "application/x-www-form-urlencoded";
@@ -218,14 +220,21 @@ encode_body(html, Body) -> Body;
 encode_body({multipart, FileName}, Body) ->
     {ok, FileType, Mime} =
         get_mime_from_extension(filename:extension(FileName)),
-    NewBody =
-        <<<<"--xxxxxxxxXXXXXXXX\r\nContent-Disposition: "
-            "form-data; name=\"">>/binary,
-          FileType/binary, <<"\"; filename=\"">>/binary,
-          FileName/binary, <<"\"\r\nContent-Type: ">>/binary,
-          Mime/binary, <<"\r\n\r\n">>/binary, Body/binary,
-          <<"\r\n--xxxxxxxxXXXXXXXX--">>/binary>>,
-    NewBody;
+    <<<<"--xxxxxxxxXXXXXXXX\r\nContent-Disposition: "
+        "form-data; name=\"">>/binary,
+      FileType/binary, <<"\"; filename=\"">>/binary,
+      FileName/binary, <<"\"\r\nContent-Type: ">>/binary,
+      Mime/binary, <<"\r\n\r\n">>/binary, Body/binary,
+      <<"\r\n--xxxxxxxxXXXXXXXX--">>/binary>>;
+encode_body({multipart, FieldName, FileName}, Body) ->
+    {ok, _FileType, Mime} =
+        get_mime_from_extension(filename:extension(FileName)),
+    <<<<"--xxxxxxxxXXXXXXXX\r\nContent-Disposition: "
+        "form-data; name=\"">>/binary,
+      FieldName/binary, <<"\"; filename=\"">>/binary,
+      FileName/binary, <<"\"\r\nContent-Type: ">>/binary,
+      Mime/binary, <<"\r\n\r\n">>/binary, Body/binary,
+      <<"\r\n--xxxxxxxxXXXXXXXX--">>/binary>>;
 encode_body({video, _FileName}, Body) -> Body;
 encode_body(_, Body) -> utils:to_json(Body).
 
