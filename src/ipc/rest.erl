@@ -49,9 +49,7 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
         undefined -> {error, invalid_url};
         {Scheme, Host, Port, Path, QS} ->
             Headers = maps:merge(#{<<"accept">> =>
-                                       cast:to_binary(get_accept_type(Type) ++ "*/*;q=0.9"),
-                                   <<"content-type">> =>
-                                       cast:to_binary(get_content_type(Type))},
+                                       cast:to_binary(get_accept_type(Type) ++ "*/*;q=0.9")},
                                  keys_to_lower(InHeaders)),
             ?LOG_DEBUG("Make connection to the ~p:~p (~p)",
                        [Host, Port, Scheme]),
@@ -79,8 +77,11 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                            end,
                                 EncBody = encode_body(Type, Body),
                                 BodySize = byte_size(EncBody),
-                                FullHeaders = maps:to_list(Headers#{<<"content-length">>
-                                                                        => BodySize}),
+                                FullHeaders = maps:to_list(Headers#{<<"content-type">>
+                                                                        =>
+                                                                        cast:to_binary(get_content_type(Type)),
+                                                                    <<"content-length">> =>
+                                                                        BodySize}),
                                 ?LOG_DEBUG("Make request ~p ~p with headers ~p and "
                                            "body size ~p",
                                            [Method, FullPath, FullHeaders, byte_size(EncBody)]),
