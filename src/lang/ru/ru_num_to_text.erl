@@ -144,8 +144,8 @@ range_word(Range, Num) ->
                  integer()) -> binary().
 
 valid_form(Forms, Num) ->
-    LastDigit = Num rem 10,
-    LastTwoDigits = Num rem 100,
+    LastDigit = abs(Num) rem 10,
+    LastTwoDigits = abs(Num) rem 100,
     case Forms of
         {Result, _, _}
             when (LastDigit =:= 1) and (LastTwoDigits =/= 11) ->
