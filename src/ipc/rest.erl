@@ -77,11 +77,18 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                            end,
                                 EncBody = encode_body(Type, Body),
                                 BodySize = byte_size(EncBody),
-                                FullHeaders = maps:to_list(Headers#{<<"content-type">>
-                                                                        =>
-                                                                        cast:to_binary(get_content_type(Type)),
-                                                                    <<"content-length">> =>
-                                                                        BodySize}),
+                                FullHeaders = case maps:is_key(<<"content-type">>,
+                                                               Headers)
+                                                  of
+                                                  true ->
+                                                      maps:to_list(Headers#{<<"content-length">> =>
+                                                                                BodySize});
+                                                  false ->
+                                                      maps:to_list(Headers#{<<"content-type">> =>
+                                                                                cast:to_binary(get_content_type(Type)),
+                                                                            <<"content-length">> =>
+                                                                                BodySize})
+                                              end,
                                 ?LOG_DEBUG("Make request ~p ~p with headers ~p and "
                                            "body size ~p",
                                            [Method, FullPath, FullHeaders, byte_size(EncBody)]),
