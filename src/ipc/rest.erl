@@ -244,7 +244,13 @@ encode_body({multipart, FieldName, FileName}, Body) ->
       Mime/binary, <<"\r\n\r\n">>/binary, Body/binary,
       <<"\r\n--xxxxxxxxXXXXXXXX--">>/binary>>;
 encode_body({video, _FileName}, Body) -> Body;
-encode_body(_, Body) -> utils:to_json(Body).
+encode_body(_, Body) ->
+    json_to_binary(utils:to_json(Body)).
+
+json_to_binary(IOList) when is_list(IOList) ->
+    iolist_to_binary(IOList);
+json_to_binary(Any) when is_binary(Any) -> Any;
+json_to_binary(Any) -> cast:to_binary(Any).
 
 parse(Headers, Body) ->
     Unzip = case maps:get(<<"content-encoding">>,

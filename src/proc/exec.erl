@@ -33,7 +33,7 @@ sync_loop(Port, TopProc) ->
             TopProc ! Message,
             sync_loop(Port, TopProc);
         Message ->
-            ?LOG_DEBUG("Igonre message ~p", [Message]),
+            ?LOG_DEBUG("Ignore message ~p", [Message]),
             sync_loop(Port, TopProc)
     end.
 
