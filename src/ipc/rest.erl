@@ -164,24 +164,23 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
 
 url_parse(URL) ->
     case uri_string:parse(cast:to_list(URL)) of
-        URI when is_map(URI) ->
-            {case maps:get(scheme, URI, "http") of
-                 "https" -> https;
-                 _ -> http
-             end,
-             maps:get(host, URI, "localhost"),
-             maps:get(port,
-                      URI,
-                      case maps:get(scheme, URI, "http") of
-                          "https" -> 443;
-                          _ -> 80
-                      end),
-             maps:get(path, URI, "/"),
-             maps:get(query, URI, "")};
+        URLMap when is_map(URLMap) ->
+            {Scheme, DefaultPort} = case maps:get(scheme,
+                                                  URLMap,
+                                                  "http")
+                                        of
+                                        "https" -> {https, 443};
+                                        _ -> {http, 80}
+                                    end,
+            {Scheme,
+             maps:get(host, URLMap, "localhost"),
+             maps:get(port, URLMap, DefaultPort),
+             maps:get(path, URLMap, "/"),
+             maps:get(query, URLMap, "")};
         Any ->
-            ?LOG_DEBUG("Can't parse URL ~p traditional way - "
-                       "~p, down to custom",
-                       [URL, Any]),
+            ?LOG_WARNING("Can't parse URL ~p traditional way - "
+                         "~p, down to custom",
+                         [URL, Any]),
             case re:run(URL,
                         "([a-z0-9]*):\\/\\/([^:\\/]+)(:[0-9]+)?([^?]*)\\"
                         "??(.*)?",
@@ -192,14 +191,21 @@ url_parse(URL) ->
                 {match, [_, _, Host, [], Path, QS]} ->
                     {http, Host, 80, Path, QS};
                 {match, [_, "http", Host, PortS, Path, QS]} ->
-                    {https, Host, utils:to_integer(PortS, 80), Path, QS};
+                    {https, Host, port_to_num(PortS, 80), Path, QS};
                 {match, [_, "https", Host, PortS, Path, QS]} ->
-                    {https, Host, utils:to_integer(PortS, 443), Path, QS};
+                    {https, Host, port_to_num(PortS, 443), Path, QS};
                 Other ->
                     ?LOG_WARNING("Can't parse URL ~p - ~p", [URL, Other]),
                     undefined
             end
     end.
+
+port_to_num(PortS, Default) ->
+    cast:to_integer(binary:replace(PortS,
+                                   <<":">>,
+                                   <<>>,
+                                   [global]),
+                    Default).
 
 keys_to_lower(L) when is_list(L) ->
     [{string:lowercase(K), V} || {K, V} <- L];
