@@ -36,9 +36,7 @@
 -module(logger_colorful_formatter).
 
 -define(RESET, "\e[m").
-
 -define(CLREOL, "\e[K").
-
 -define(CSI(Code),
         ["\e[", integer_to_binary(Code), $m]).
 

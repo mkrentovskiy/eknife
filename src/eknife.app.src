@@ -1,15 +1,17 @@
 {application, eknife,
  [
   {description, "Erlang Swiss Army knife"},
-  {vsn, "1.0.0"},
+  {vsn, "2.0.0"},
   {modules, [
-    pubsub,
-    oauth2c,
+    iso8601,
+    logger_colorful_formatter,
+    ru_num_to_text,
+    pubsub_gproc,
     rest,
-    slugs,
-    utils,
-    images, 
-    cast
+    cast,
+    exec,
+    images,
+    tools
   ]},
   {registered, []},
   {applications, [
@@ -24,8 +26,6 @@
     gproc
   ]},
   {included_applications, [
-    jiffy,
-    iso8601,
     io_libc
   ]},
   {env, []}

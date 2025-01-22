@@ -1,8 +1,11 @@
 -module(ru_num_to_text).
-
--export([convert/1, valid_form/2]).
+-export([
+          convert/1, 
+          valid_form/2
+        ]).
 
 -include("eknife.hrl").
+
 
 -define(NULL, <<"ноль"/utf8>>).
 
@@ -72,89 +75,97 @@
                <<"квинтиллиона"/utf8>>,
                <<"квинтиллионов"/utf8>>}}).
 
--spec convert(integer() |
-              list() |
-              binary()) -> binary().
-
+-spec convert(integer() | list() | binary()) -> binary().
 convert(Num) when is_integer(Num) ->
-    convert(Num, 1, true);
-convert(Num) -> convert(cast:to_integer(Num), 1, true).
-
-convert(0, _Range, true) -> ?NULL;
-convert(0, _Range, false) -> <<>>;
+  convert(Num, 1, true);
+convert(Num) -> 
+  convert(cast:to_integer(Num), 1, true).
+convert(0, _Range, true) -> 
+  ?NULL;
+convert(0, _Range, false) -> 
+  <<>>;
 convert(Num, Range, ReturnZero) when Num < 0 ->
-    TextNum = convert(abs(Num), Range, ReturnZero),
-    <<"минус "/utf8, TextNum/binary>>;
+  TextNum = convert(abs(Num), Range, ReturnZero),
+  <<"минус "/utf8, TextNum/binary>>;
 convert(Num, 1, _ReturnZero) when Num < 1_000 ->
-    up_to(Num, ?DIGITS);
+  up_to(Num, ?DIGITS);
 convert(Num, Range, _ReturnZero) ->
-    D = case Range =:= 2 of
-            true -> ?THOUSANDS;
-            false -> ?DIGITS
-        end,
-    {NumDiv, NumRem} = split(Num, 1_000),
-    case range_word(Range, NumRem) of
-        undefined -> <<>>;
-        RangeWord when NumDiv =:= 0 ->
-            case up_to(NumRem, D) of
-                <<>> -> <<>>;
-                NumRemText ->
-                    <<NumRemText/binary, " ", RangeWord/binary>>
-            end;
-        RangeWord ->
-            case up_to(NumRem, D) of
-                <<>> -> convert(NumDiv, Range + 1, false);
-                NumRemText ->
-                    case convert(NumDiv, Range + 1, false) of
-                        <<>> -> <<NumRemText/binary, " ", RangeWord/binary>>;
-                        TextBefore ->
-                            <<TextBefore/binary, " ", NumRemText/binary, " ",
-                              RangeWord/binary>>
-                    end
-            end
-    end.
+  D = case Range =:= 2 of
+    true -> 
+      ?THOUSANDS;
+    false -> 
+      ?DIGITS
+  end,
+  {NumDiv, NumRem} = split(Num, 1_000),
+  case range_word(Range, NumRem) of
+    undefined -> 
+      <<>>;
+    RangeWord when NumDiv =:= 0 ->
+      case up_to(NumRem, D) of
+        <<>> -> 
+          <<>>;
+        NumRemText ->
+          <<NumRemText/binary, " ", RangeWord/binary>>
+      end;
+    RangeWord ->
+      case up_to(NumRem, D) of
+        <<>> -> 
+          convert(NumDiv, Range + 1, false);
+        NumRemText ->
+          case convert(NumDiv, Range + 1, false) of
+            <<>> -> 
+              <<NumRemText/binary, " ", RangeWord/binary>>;
+            TextBefore ->
+              <<TextBefore/binary, " ", NumRemText/binary, " ", RangeWord/binary>>
+          end
+      end
+  end.
 
-split(Num, D) -> {Num div D, Num rem D}.
+split(Num, D) -> 
+  {Num div D, Num rem D}.
 
-up_to(Num, D) when Num < 10 -> maps:get(Num, D);
-up_to(Num, _D) when Num < 20 -> maps:get(Num, ?TEENS);
+up_to(Num, D) when Num < 10 -> 
+  maps:get(Num, D);
+up_to(Num, _D) when Num < 20 -> 
+  maps:get(Num, ?TEENS);
 up_to(Num, D) when Num < 100 ->
-    {Tens, Rest} = split(Num, 10),
-    case up_to(Rest, D) of
-        <<>> -> maps:get(Tens, ?TENS);
-        RestText ->
-            <<(maps:get(Tens, ?TENS))/binary, " ", RestText/binary>>
-    end;
+  {Tens, Rest} = split(Num, 10),
+  case up_to(Rest, D) of
+    <<>> -> 
+      maps:get(Tens, ?TENS);
+    RestText ->
+      <<(maps:get(Tens, ?TENS))/binary, " ", RestText/binary>>
+  end;
 up_to(Num, D) when Num < 1_000 ->
-    {Hundreds, Rest} = split(Num, 100),
-    case up_to(Rest, D) of
-        <<>> -> maps:get(Hundreds, ?HUNDREDS);
-        RestText ->
-            <<(maps:get(Hundreds, ?HUNDREDS))/binary, " ",
-              RestText/binary>>
-    end.
+  {Hundreds, Rest} = split(Num, 100),
+  case up_to(Rest, D) of
+    <<>> -> 
+      maps:get(Hundreds, ?HUNDREDS);
+    RestText ->
+      <<(maps:get(Hundreds, ?HUNDREDS))/binary, " ", RestText/binary>>
+  end.
 
 range_word(Range, Num) ->
-    case maps:get(Range, ?RANGE_WORD, undefined) of
-        undefined -> undefined;
-        Forms -> valid_form(Forms, Num)
-    end.
+  case maps:get(Range, ?RANGE_WORD, undefined) of
+    undefined -> 
+      undefined;
+    Forms -> 
+      valid_form(Forms, Num)
+  end.
 
--spec valid_form({binary(), binary(), binary()},
-                 integer()) -> binary().
-
+-spec valid_form({binary(), binary(), binary()}, integer()) -> binary().
 valid_form(Forms, Num) ->
-    LastDigit = abs(Num) rem 10,
-    LastTwoDigits = abs(Num) rem 100,
-    case Forms of
-        {Result, _, _}
-            when (LastDigit =:= 1) and (LastTwoDigits =/= 11) ->
-            Result;
-        {_, Result, _}
-            when ((LastDigit =:= 2) or (LastDigit =:= 3) or
-                      (LastDigit =:= 4))
-                     and ((LastTwoDigits > 20) or (LastTwoDigits < 10)) ->
-            Result;
-        {_, _, Result} -> Result;
-        _ -> undefined
-    end.
+  LastDigit = abs(Num) rem 10,
+  LastTwoDigits = abs(Num) rem 100,
+  case Forms of
+    {Result, _, _} 
+        when (LastDigit =:= 1) and (LastTwoDigits =/= 11) ->
+      Result;
+    {_, Result, _} 
+        when ((LastDigit =:= 2) or (LastDigit =:= 3) or (LastDigit =:= 4)) and ((LastTwoDigits > 20) or (LastTwoDigits < 10)) ->
+      Result;
+    {_, _, Result} -> 
+      Result;
+    _ -> 
+      undefined
+  end.

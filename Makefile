@@ -11,7 +11,3 @@ compile: $(REBAR)
 
 xref: $(REBAR)
 	$(REBAR) xref
-
-commit: $(REBAR)
-	ERL_AFLAGS="-enable-feature all" $(REBAR) format
-	git commit .
