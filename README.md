@@ -8,7 +8,7 @@ Consist of:
 * Images type detect and check size (jpeg only);
 * Rest clients (based on gun);
 * Some utilites:
-  * buitify stacktrace (using in exception);
+  * stringify stacktrace (using in exception);
   * type cast functions;
   * date/time operations;
   * json operations;
