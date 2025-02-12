@@ -99,13 +99,13 @@ to_json(Msg, Default) ->
   try json:encode((json_prepare(Msg))) of
     Err when is_tuple(Err) ->
       ?LOG_ERROR("Error encoding to JSON ~p in ~p", [Err, Msg]),
-      json:encode(json_default(Msg));
+      cast:to_binary(json:encode(json_default(Msg)));
     IOData -> 
-      IOData
+      cast:to_binary(IOData)
   catch
     Exc:Exp:Stacktrace ->
       ?LOG_ERROR("Exception ~p:~p in encoding of ~p~n~p", [Exc, Exp, Msg, Stacktrace]),
-      Default
+      cast:to_binary(Default)
   end.
 
 json_prepare(Msg) when is_list(Msg) ->
