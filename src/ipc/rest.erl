@@ -216,6 +216,7 @@ get_accept_type(html) -> "text/html, ";
 get_accept_type(qs) ->
     "application/x-www-form-urlencoded, ";
 get_accept_type(json) -> "application/json, ";
+get_accept_type({asis, _Out, In}) -> In ++ ", ";
 get_accept_type(_) -> "".
 
 get_content_type(video) -> "video/mp4";
@@ -227,6 +228,7 @@ get_content_type(html) -> "text/html";
 get_content_type(qs) ->
     "application/x-www-form-urlencoded";
 get_content_type(json) -> "application/json";
+get_content_type({asis, Out, _In}) -> Out;
 get_content_type(_) -> "text/plain".
 
 encode_body(qs, Body) -> cow_qs:qs(maps:to_list(Body));
@@ -250,6 +252,7 @@ encode_body({multipart, FieldName, FileName}, Body) ->
       Mime/binary, <<"\r\n\r\n">>/binary, Body/binary,
       <<"\r\n--xxxxxxxxXXXXXXXX--">>/binary>>;
 encode_body({video, _FileName}, Body) -> Body;
+encode_body({asis, _Out, _In}, Body) -> Body;
 encode_body(_, Body) ->
     json_to_binary(utils:to_json(Body)).
 
