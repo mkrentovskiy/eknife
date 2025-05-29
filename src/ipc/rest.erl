@@ -201,7 +201,7 @@ url_parse(URL) ->
     end.
 
 port_to_num(PortS, Default) ->
-    cast:to_integer(binary:replace(PortS,
+    cast:to_integer(binary:replace(cast:to_binary(PortS),
                                    <<":">>,
                                    <<>>,
                                    [global]),
