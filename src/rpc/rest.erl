@@ -114,7 +114,7 @@ url_parse(URL) ->
   end.
 
 port_to_num(PortS, Default) ->
-  cast:to_integer(binary:replace(PortS, <<":">>, <<>>, [global]), Default).
+  cast:to_integer(binary:replace(cast:to_binary(PortS), <<":">>, <<>>, [global]), Default).
 
 options([], https) ->
   #{ protocols => [http], transport => tls };
