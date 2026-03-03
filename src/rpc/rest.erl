@@ -121,7 +121,7 @@ options([], https) ->
 options(_TransportOptions, http) ->
   #{ protocols => [http] };
 options(TransportOptions, _Scheme) ->
-  #{ protocols => [http], transport => tls, transport_opts => TransportOptions}.
+  #{ protocols => [http], transport => tls, tls_opts => TransportOptions}.
 
 headers(InHeaders, Type) ->
   Headers = keys_to_lower(InHeaders),
