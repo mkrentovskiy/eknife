@@ -5,18 +5,17 @@
 -include("eknife.hrl").
 
 -spec request(atom(), atom() | {atom(), any()}, list(),
-              [integer()], map(), map() | binary() | list()) -> {ok,
-                                                                 integer(), map(),
-                                                                 map() | list() | binary()} |
-                                                                {error, integer(), map(),
-                                                                 map() | list() | binary()} |
-                                                                {error, any()}.
+              [integer()] | atom(), map(),
+              map() | binary() | list()) -> {ok, integer(), map(),
+                                             map() | list() | binary()} |
+                                            {error, integer(), map(), map() | list() | binary()} |
+                                            {error, any()}.
 
 request(Method, Type, URL, Expect, InHeaders, Body) ->
     request(Method, Type, URL, Expect, InHeaders, Body, []).
 
 -spec request(atom(), atom() | {atom(), any()}, list(),
-              [integer()], map(), map() | binary() | list(),
+              [integer()] | atom(), map(), map() | binary() | list(),
               [tuple()]) -> {ok, integer(), map(),
                              map() | list() | binary()} |
                             {error, integer(), map(), map() | list() | binary()} |
@@ -142,7 +141,7 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                            RespHeaders =
                                maps:from_list(keys_to_lower(RespHeadersL)),
                            case gun:await_body(ConnPid, StreamRef, ?GUN_TIMEOUT) of
-                               {ok, RespBody} ->
+                               {ok, RespBody} when is_list(Expect) ->
                                    case lists:any(fun (I) -> I =:= Status end, Expect) of
                                        true ->
                                            {ok, Status, RespHeaders, parse(RespHeaders, RespBody)};
@@ -154,6 +153,8 @@ request_throwable(Method, Type, URL, Expect, InHeaders,
                                             RespHeaders,
                                             parse(RespHeaders, RespBody)}
                                    end;
+                               {ok, RespBody} when Expect =:= asis ->
+                                   {ok, Status, RespHeaders, RespBody};
                                Error -> {error, Error}
                            end;
                        Any -> Any
