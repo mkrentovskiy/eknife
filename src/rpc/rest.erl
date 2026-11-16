@@ -11,17 +11,17 @@
 -define(REST_CLIENT_TIMEOUT, ?S2MS(60)).
 
 
--spec request(atom(), atom() | {atom(), any()}, list(), [integer()], map(), map() | binary() | list()) 
+-spec request(atom(), atom() | {atom(), any()}, list(), [integer()] | atom(), map(), map() | binary() | list()) 
     -> {ok, integer(), map(), map() | list() | binary()} | {error, integer(), map(), map() | list() | binary()} | {error, any()}.
 request(Method, Type, URL, Expect, InHeaders, Body) ->
   request(Method, Type, URL, Expect, InHeaders, Body, ?REST_CLIENT_TIMEOUT, []).
 
--spec request(atom(), atom() | {atom(), any()}, list(), [integer()], map(), map() | binary() | list(), [tuple()])
+-spec request(atom(), atom() | {atom(), any()}, list(), [integer()] | atom(), map(), map() | binary() | list(), [tuple()])
     -> {ok, integer(), map(), map() | list() | binary()} | {error, integer(), map(), map() | list() | binary()} | {error, any()}.
 request(Method, Type, URL, Expect, InHeaders, Body, TransportOptions) ->
   request(Method, Type, URL, Expect, InHeaders, Body, ?REST_CLIENT_TIMEOUT, TransportOptions).
 
--spec request(atom(), atom() | {atom(), any()}, list(), [integer()], map(), map() | binary() | list(), integer(), [tuple()]) 
+-spec request(atom(), atom() | {atom(), any()}, list(), [integer()] | atom(), map(), map() | binary() | list(), integer(), [tuple()]) 
   -> {ok, integer(), map(), map() | list() | binary()} | {error, integer(), map(), map() | list() | binary()} | {error, any()}.
 request(Method, Type, URL, Expect, InHeaders, Body, Timeout, TransportOptions) ->
   try 
@@ -239,6 +239,8 @@ encode_body(_, Body) ->
 % response
 %
 
+response(Status, asis, RespHeaders, RespBody) ->
+  {ok, Status, RespHeaders, RespBody};
 response(Status, [], RespHeaders, null) ->
   {ok, Status, RespHeaders, #{}};
 response(Status, [], RespHeaders, RespBody) ->
